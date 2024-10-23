@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In</title>
+    <script>
+        async function signIn(event) {
+            event.preventDefault();  // Prevent default form submission
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const errorMessage = document.getElementById('error-message');
+
+            // Send a POST request to the server
+            const response = await fetch('/signin', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ email, password })
+            });
+
+            const result = await response.json();
+            if (result.success) {
+                // Redirect to the profile page on success
+                window.location.href = '/profile';
+            } else {
+                // Show the error message
+                errorMessage.textContent = result.error;
+            }
+        }
+    </script>
+</head>
+<body>
+    <h1>Sign In</h1>
+    <form id="signin-form" onsubmit="signIn(event)">
+        <label for="email">Email:</label>
+        <input type="email" id="email" name="email" required>
+        
+        <label for="password">Password:</label>
+        <input type="password" id="password" name="password" required>
+        
+        <button type="submit">Sign In</button>
+        <div id="error-message" style="color: red;"></div>
+    </form>
+
+    {% if error %}
+        <script>
+            document.getElementById('error-message').textContent = "{{ error }}";
+        </script>
+    {% endif %}
+</body>
+</html>
