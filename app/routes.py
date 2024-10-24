@@ -91,7 +91,7 @@ def signin():
 def profile():
     username = session.get('username')
     if username:
-        return render_template('profile.html', username=username)
+        return render_template('index_profile.html', username=username)
     return redirect('/')  # Redirect to home if not logged in
 
 @main.route('/signout')
