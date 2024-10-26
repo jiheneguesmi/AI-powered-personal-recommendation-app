@@ -17,19 +17,19 @@ from geopy.exc import GeocoderTimedOut
 
 
 #Importation Tache 3
-from langchain_core.prompts import PromptTemplate, ChatPromptTemplate
-from langchain import hub
-from langchain.docstore.document import Document
-from langchain_community.document_loaders import WebBaseLoader
-from langchain.chains import LLMChain
-from langchain.schema import StrOutputParser
-from langchain.schema.prompt_template import format_document
+#from langchain_core.prompts import PromptTemplate, ChatPromptTemplate
+#from langchain import hub
+#from langchain.docstore.document import Document
+#from langchain_community.document_loaders import WebBaseLoader
+#from langchain.chains import LLMChain
+#from langchain.schema import StrOutputParser
+#from langchain.schema.prompt_template import format_document
 #from langchain.schema.runnable import RunnablePassthrough
-from langchain_core.runnables import RunnableLambda, RunnablePassthrough
-from langchain_community.vectorstores import Chroma, FAISS
-from langchain_community.document_loaders import PyPDFLoader
-from langchain_google_genai import GoogleGenerativeAIEmbeddings, ChatGoogleGenerativeAI
-import numpy as np
+#from langchain_core.runnables import RunnableLambda, RunnablePassthrough
+#from langchain_community.vectorstores import Chroma, FAISS
+#from langchain_community.document_loaders import PyPDFLoader
+#from langchain_google_genai import GoogleGenerativeAIEmbeddings, ChatGoogleGenerativeAI
+#import numpy as np
 
 
 # Create a Flask Blueprint
@@ -150,6 +150,12 @@ def find_places():
         if (not _region) and (_state == 'Choose...'):
             return render_template('find_local_experiences.html', username=_username)
         return render_template('find_places.html', username=_username, region=_region, state=_state)
+    if request.method == 'GET' and _username:
+        _region = request.args.get('region')
+        _state = request.args.get('state')
+        if (not _region) and (not _state):
+            return render_template('find_local_experiences.html', username=_username)
+        return render_template('find_places.html', username=_username, region=_region, state=_state)
     return redirect('/')
 
 @main.route('/places', methods=['GET', 'POST'])
@@ -167,7 +173,7 @@ def places():
             searchString = searchString + ' ' + state
         results = PlacesClient.google_maps_search(
         [searchString],
-        limit=10, # limit of palces per each query
+        limit=100, # limit of palces per each query
         language='en',
         region='TN',
         )
@@ -202,7 +208,7 @@ def reviews():
                 endpoint = os.environ['AZURE_TEXT_ANALYTICS_ENDPOINT']
                 key = os.environ['AZURE_TEXT_ANALYTICS_KEY']
                 text_analytics_client = TextAnalyticsClient(endpoint, AzureKeyCredential(key))
-                results = ReviewsClient.google_maps_reviews([id], reviews_limit=10, language='en')
+                results = ReviewsClient.google_maps_reviews([id], reviews_limit=100, language='en')
                 ll = list()
                 index_total = 0
                 index_negative = 0
@@ -224,7 +230,6 @@ def reviews():
                                         ll.append(dd)
                                     if (result.sentiment == 'neutral'):
                                         index_neutral = index_neutral + 1
-                                        ll.append(dd)
                                     if (result.sentiment == 'negative'):
                                         index_negative = index_negative + 1
                 return render_template('reviews.html', username=_username, score_positive=(index_positive / index_total), score_neutral=(index_neutral / index_total),score_negative=(index_negative / index_total), place_name=name, llist=ll)
@@ -368,40 +373,40 @@ def recommend():
 #Lecture et Analyse des données du site Web
 #Utilisation du chargeur de Documents WebBaseLoader de LangChain  
 
-pages = PyPDFLoader(r"C:\\Users\\IMINFO\\tunisian_tourism\\app\\templates\\activity-tourisme-tunisie.pdf").load_and_split()
-print("Read {0} pages".format(len(pages)))
-alltext = " ".join(p.page_content.replace("\n", " ") for p in pages)
+#pages = PyPDFLoader(r"C:\\Users\\IMINFO\\tunisian_tourism\\app\\templates\\activity-tourisme-tunisie.pdf").load_and_split()
+#print("Read {0} pages".format(len(pages)))
+#alltext = " ".join(p.page_content.replace("\n", " ") for p in pages)
 
-import nltk
-nltk.download('punkt_tab')
-lengths=[]
-cleantext = ""
+#import nltk
+#nltk.download('punkt_tab')
+#lengths=[]
+#cleantext = ""
 
-for s in nltk.sent_tokenize(alltext):
-    if(len(s) > 1 and len(s) < 2000):
-        lengths.append(len(s))
-        cleantext = cleantext + s + " "
+#for s in nltk.sent_tokenize(alltext):
+#    if(len(s) > 1 and len(s) < 2000):
+#        lengths.append(len(s))
+#        cleantext = cleantext + s + " "
 
-print("Number of sentences: {0}".format(len(lengths)))
-print("Clean text length %d" % len(cleantext))
+#print("Number of sentences: {0}".format(len(lengths)))
+#print("Clean text length %d" % len(cleantext))
 
-from langchain_text_splitters import RecursiveCharacterTextSplitter
+#from langchain_text_splitters import RecursiveCharacterTextSplitter
 
-text_splitter = RecursiveCharacterTextSplitter(
-    chunk_size=380,
-    chunk_overlap=80,
-    length_function=len,
-    is_separator_regex=False,
-)
+#text_splitter = RecursiveCharacterTextSplitter(
+#    chunk_size=380,
+#    chunk_overlap=80,
+#    length_function=len,
+#    is_separator_regex=False,
+#)
 
-docs = text_splitter.create_documents([cleantext])
-chunks = [Document(page_content=d.page_content) for d in docs]
+#docs = text_splitter.create_documents([cleantext])
+#chunks = [Document(page_content=d.page_content) for d in docs]
 
 # Initialiser les embeddings Google Generative AI
-gemini_embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
+#gemini_embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
 
-vectorstore = FAISS.from_documents(chunks, gemini_embeddings)
-vectorstore.save_local("ActivityDurableDB.faiss")
+#vectorstore = FAISS.from_documents(chunks, gemini_embeddings)
+#vectorstore.save_local("ActivityDurableDB.faiss")
 
 #test vectorDB
 """vectorstore = FAISS.load_local("ActivityDurableDB.faiss", embeddings=gemini_embeddings,  allow_dangerous_deserialization=True)
@@ -412,10 +417,10 @@ for d in res:
     print(d.page_content)"""
 
 # Obtenir l'interface Retriever
-vscontext = vectorstore.as_retriever()
-print(vscontext)
+#vscontext = vectorstore.as_retriever()
+#print(vscontext)
 # Initialiser le modèle LLM
-llm = ChatGoogleGenerativeAI(model="gemini-1.0-pro-latest", temperature=0.7, top_p=0.85)
+#llm = ChatGoogleGenerativeAI(model="gemini-1.0-pro-latest", temperature=0.7, top_p=0.85)
 
 # Définir le template de l'invite
 llm_prompt_template = """Tu es un expert en tourisme en Tunisie. 
@@ -480,32 +485,68 @@ Conseils supplémentaires : [conseils pratiques]
 
 Réponse:"""
 
-llm_prompt = PromptTemplate.from_template(llm_prompt_template)
+#llm_prompt = PromptTemplate.from_template(llm_prompt_template)
 
 # Créer la chaîne RAG
-rag_chain = (
-    {"context": vscontext, "user_places": RunnablePassthrough()}
-    | llm_prompt
-    | llm
-    | StrOutputParser()
-)
+#rag_chain = (
+#    {"context": vscontext, "user_places": RunnablePassthrough()}
+#    | llm_prompt
+#    | llm
+#    | StrOutputParser()
+#)
 
 @main.route('/locationChoice')
 def locationChoix():
     return render_template('locationChoice.html')
 
-@main.route('/submit_location', methods=['POST'])
-def submit_location():
-    form_data = request.json
-    user_places = form_data.get('city', 'Inconnu')
+#@main.route('/submit_location', methods=['POST'])
+#def submit_location():
+#    form_data = request.json
+#    user_places = form_data.get('city', 'Inconnu')
 
-    print(user_places)
+#    print(user_places)
     # Créer le prompt avec la ville spécifique
-    query = f"Quelles sont les activités touristiques disponibles à {user_places}?"
+#    query = f"Quelles sont les activités touristiques disponibles à {user_places}?"
     
     # Appeler la chaîne RAG
-    response = rag_chain.invoke(query, user_places=user_places)
-    print (response)
-    return jsonify({"recommendations": response})
+#    response = rag_chain.invoke(query, user_places=user_places)
+#    print (response)
+#    return jsonify({"recommendations": response})
 
 #Fin Tache 3
+@main.route('/feed_back', methods=['GET', 'POST'])
+def feed_back():
+    _username = session.get('username')
+    if not _username:
+        return redirect('/')
+    return render_template('feed_back.html', username=_username)
+
+@main.route('/save_feed', methods=['POST'])
+def save_feed():
+    _username = session.get('username')
+    if not _username:
+        return redirect('/')
+    relevancy = request.form.get('recom')
+    activities = request.form.get('actvs')
+    will_return = request.form.get('return')
+    feel = request.form.get('feel')
+    about = request.form.get('act')
+     # Define the data to be saved
+    review_data = {
+        'username': _username,
+        'relevancy': relevancy,
+        'activities': activities,
+        'will_return': will_return,
+        'feel': feel,
+        'about': about,
+        'timestamp': firestore.SERVER_TIMESTAMP  # adds a timestamp field
+    }
+
+    try:
+        # Save data to Firestore collection `reviews`
+        db.collection('reviews').add(review_data)
+        return render_template('index_profile.html', username=_username)
+    except Exception as e:
+        # Handle potential errors
+        print(f"An error occurred: {e}")
+        return render_template('error.html', error="Could not save your feedback. Please try again.")
