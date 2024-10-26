@@ -9,7 +9,6 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <link rel="stylesheet" href="{{ url_for('static', filename='css/weather.css') }}">
     <style>
-
         /* Title Styling */
         h1 {
             font-family: 'Georgia', serif;
@@ -183,12 +182,6 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="/weather-location">
-                        <i class="mdi mdi-map menu-icon"></i>
-                        <span class="menu-title">Get on-time notifications</span>
-                    </a>
-                </li>
-                <li class="nav-item">
                     <a class="nav-link" href="pages/icons/mdi.html">
                         <i class="mdi mdi-emoticon menu-icon"></i>
                         <span class="menu-title">Icons</span>
@@ -308,24 +301,34 @@
             maxZoom: 19,
             attribution: '© OpenStreetMap'
         }).addTo(map);
-
-        // Get user's location using the Geolocation API
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                function (position) {
-                    const lat = position.coords.latitude;
-                    const lon = position.coords.longitude;
-
-                    // Add a marker for the user's location
-                    const userMarker = L.marker([lat, lon]).addTo(map)
-                        .bindPopup('You are here!')
+        async function getLocationCoordinates(locationName) {
+            const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${locationName}`);
+            const data = await response.json();
+            if (data.length > 0) {
+                return { latitude: data[0].lat, longitude: data[0].lon };
+            } else {
+                throw new Error("Location not found");
+            }
+        }
+        async function getLocationCoordinates(locationName) {
+            const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${locationName}`);
+            const data = await response.json();
+            if (data.length > 0) {
+                return { latitude: data[0].lat, longitude: data[0].lon };
+            } else {
+                throw new Error("Location not found");
+            }
+        }
+        ll = "{{location}}";
+        if (ll) {
+            
+            getLocationCoordinates(ll + ', Tunisia')
+                .then(coordinates => {
+                    map.setView([coordinates.latitude, coordinates.longitude], 13);
+                    L.marker([coordinates.latitude, coordinates.longitude]).addTo(map)
+                        .bindPopup(ll + ', Tunisia')
                         .openPopup();
-
-                    // Center the map on user's location
-                    map.setView([lat, lon], 13);
-
-                    // Fetch weather data from server
-                    fetch(`/weather?lat=${lat}&lon=${lon}`)
+                    fetch(`/weather?lat=${coordinates.latitude}&lon=${coordinates.longitude}`)
                         .then(response => response.json())
                         .then(data => {
                             if (data && data.current && data.hourly) {
@@ -366,31 +369,96 @@
                             } else {
                                 document.getElementById('weather').innerHTML = '<p>Weather data not available.</p>';
                             }
-                        })
-                        .catch(err => {
-                            document.getElementById('weather').innerHTML = '<p>Error fetching weather data.</p>';
                         });
-                },
-                function () {
-                    // Default location for Tunis
-                    const defaultLat = 36.8000; // Tunis latitude
-                    const defaultLon = 10.1797; // Tunis longitude
+                })
+                .catch(error => {
+                    console.error("Error:", error.message);
 
-                    const userMarker = L.marker([defaultLat, defaultLon]).addTo(map)
-                        .bindPopup('You are in Tunis!')
-                        .openPopup();
+                })
+        } else {
+            // Get user's location using the Geolocation API
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    function (position) {
 
-                    map.setView([defaultLat, defaultLon], 13);
+                        const lat = position.coords.latitude;
+                        const lon = position.coords.longitude;
 
-                    // Fetch weather data for Tunis
-                    fetch(`/weather?lat=${defaultLat}&lon=${defaultLon}`)
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data && data.weather && data.main) {
-                                const weatherCondition = data.weather[0].main.toLowerCase();
-                                const iconClass = getWeatherIcon(weatherCondition);
+                        // Add a marker for the user's location
+                        const userMarker = L.marker([lat, lon]).addTo(map)
+                            .bindPopup('You are here!')
+                            .openPopup();
 
-                                const weatherHTML = `
+                        // Center the map on user's location
+                        map.setView([lat, lon], 13);
+
+                        // Fetch weather data from server
+                        fetch(`/weather?lat=${lat}&lon=${lon}`)
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data && data.current && data.hourly) {
+                                    // Handle current weather
+                                    const weatherCondition = data.current.weather[0].main.toLowerCase();
+                                    const iconClass = getWeatherIcon(weatherCondition);
+                                    const weatherHTML = `
+                                    <div class="weather-info">
+                                        <div class="weather-icon ${iconClass}"></div>
+                                        <div class="weather-details">
+                                            <h2>Weather Information</h2>
+                                            <p>Temperature: ${data.current.main.temp}°C</p>
+                                            <p>Condition: ${data.current.weather[0].description}</p>
+                                        </div>
+                                    </div>
+                                    <div class="location">${data.current.name}</div>
+                                `;
+                                    document.getElementById('weather').innerHTML = weatherHTML;
+
+                                    // Populate hourly forecast for the next 12 hours
+                                    const hourlyList = document.getElementById('hourly-list');
+                                    hourlyList.innerHTML = ''; // Clear any existing content
+                                    for (let i = 0; i < 12; i++) { // Show next 12 hours
+                                        const hour = data.hourly[i];
+                                        const date = new Date(hour.dt * 1000);
+                                        const hours = date.getHours();
+                                        const temp = hour.main.temp;
+                                        const desc = hour.weather[0].description;
+                                        const icon = getWeatherIcon(desc, hours >= 6 && hours < 18);
+
+                                        const li = document.createElement('li');
+                                        li.innerHTML = `
+                                        <div class="weather-icon ${icon}"></div>
+                                        <p>${hours}:00 - ${temp}°C, ${desc}</p>
+                                    `;
+                                        hourlyList.appendChild(li);
+                                    }
+                                } else {
+                                    document.getElementById('weather').innerHTML = '<p>Weather data not available.</p>';
+                                }
+                            })
+                            .catch(err => {
+                                document.getElementById('weather').innerHTML = '<p>Error fetching weather data.</p>';
+                            });
+                    },
+                    function () {
+                        // Default location for Tunis
+                        const defaultLat = 36.8000; // Tunis latitude
+                        const defaultLon = 10.1797; // Tunis longitude
+
+                        const userMarker = L.marker([defaultLat, defaultLon]).addTo(map)
+                            .bindPopup('You are in Tunis!')
+                            .openPopup();
+
+                        map.setView([defaultLat, defaultLon], 13);
+
+                        // Fetch weather data for Tunis
+                        fetch(`/weather?lat=${defaultLat}&lon=${defaultLon}`)
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data && data.weather && data.main) {
+                                    const weatherCondition = data.weather[0].main.toLowerCase();
+                                    const iconClass = getWeatherIcon(weatherCondition);
+
+                                    const weatherHTML = `
                                     <div class="weather-info">
                                         <div class="weather-icon ${iconClass}"></div>
                                         <div class="weather-details">
@@ -401,15 +469,16 @@
                                     </div>
                                     <div class="location">${data.name}</div>
                                 `;
-                                document.getElementById('weather').innerHTML = weatherHTML;
-                            } else {
-                                document.getElementById('weather').innerHTML = '<p>Weather data not available.</p>';
-                            }
-                        });
-                }
-            );
-        } else {
-            alert('Geolocation is not supported by this browser.');
+                                    document.getElementById('weather').innerHTML = weatherHTML;
+                                } else {
+                                    document.getElementById('weather').innerHTML = '<p>Weather data not available.</p>';
+                                }
+                            });
+                    }
+                );
+            } else {
+                alert('Geolocation is not supported by this browser.');
+            }
         }
 
         function getWeatherIcon(condition, isDay) {

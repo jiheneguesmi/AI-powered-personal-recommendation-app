@@ -63,12 +63,6 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="/weather-location">
-                        <i class="mdi mdi-map menu-icon"></i>
-                        <span class="menu-title">Get on-time notifications</span>
-                    </a>
-                </li>
-                <li class="nav-item">
                     <a class="nav-link" href="pages/icons/mdi.html">
                         <i class="mdi mdi-emoticon menu-icon"></i>
                         <span class="menu-title">Icons</span>
@@ -143,6 +137,7 @@
                                         <p class="card-text"><strong>Category:</strong> {{ destination.category }}</p>
                                         <p class="card-text"><strong>Location:</strong> {{ destination.location }}</p>
                                         <p class="card-text"><strong>Budget:</strong> {{ destination.budget }}</p>
+                                        <a href="/weather-location?location={{destination.location}}" class="card-text" target="_blank"><strong>Get weather in this location</strong></a>
                                         <p class="card-text"><strong>Description:</strong> {{ destination.description }}
                                         </p>
                                         <a href="{{ destination.link }}" class="btn btn-primary">View More</a>
