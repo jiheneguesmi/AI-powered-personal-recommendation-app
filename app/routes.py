@@ -398,6 +398,9 @@ Randonnées chamelières avec guides locaux
 Observation des étoiles (astrotourisme)
 Découverte de la flore saharienne avec un botaniste
 Participation aux projets de préservation des espèces
+Sousse : Visite de Port El Kantaoui  
+Monastir : Ribat de Monastir, Palais présidentiel Habib Bourguiba  
+
 Ksar Ghilane
 Hébergement en campements écologiques
 Baignade dans les sources thermales naturelles
@@ -452,12 +455,12 @@ rag_chain = (
     | StrOutputParser()
 )
 
-@main.route('/preferences')
-def preferences():
+@main.route('/locationChoice')
+def locationChoix():
     return render_template('locationChoice.html')
 
-@main.route('/submit_preferences', methods=['POST'])
-def submit_preferences():
+@main.route('/submit_location', methods=['POST'])
+def submit_location():
     form_data = request.json
     user_places = form_data.get('city', 'Inconnu')
 
