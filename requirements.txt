@@ -10,3 +10,16 @@ azure-ai-textanalytics
 pandas
 geopy
 scikit-learn
+
+#BIB for Task 3
+langchain
+langchain-core
+langchain-community
+langchain-google-genai
+google-cloud-firestore
+gunicorn
+#chromadb==0.5.0
+beautifulsoup4
+pypdf
+nltk
+faiss-cpu
