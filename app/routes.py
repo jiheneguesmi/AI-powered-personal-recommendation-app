@@ -284,7 +284,11 @@ def submit_preferences():
 
 @main.route('/weather-location', methods=['GET'])
 def weather_page():
-    return render_template('weather.html')
+    _username = session.get('username')
+    if not _username:
+        return redirect('/')
+    _location = request.args.get('location')
+    return render_template('weather.html', username=_username, location=_location)
 
 
 def get_latitude_longitude(location):
