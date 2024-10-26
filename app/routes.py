@@ -1,6 +1,6 @@
 import os
 import pandas as pd
-
+from .config import Config
 from flask import Blueprint, render_template, request, jsonify, session, redirect
 from google_maps_reviews import ReviewsClient
 from outscraper import ApiClient
@@ -212,6 +212,28 @@ def reviews():
 def signout():
     session.pop('username', None)  # Remove the username from the session
     return redirect('/')  # Redirect to home page
+def get_weather_by_coordinates(api_key, lat, lon):
+    # First, get the current weather
+    current_url = f"http://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={api_key}&units=metric"
+    try:
+        current_response = requests.get(current_url)
+        current_response.raise_for_status()
+        current_weather = current_response.json()
+
+        # Now, get the hourly forecast
+        forecast_url = f"http://api.openweathermap.org/data/2.5/forecast?lat={lat}&lon={lon}&appid={api_key}&units=metric"
+        forecast_response = requests.get(forecast_url)
+        forecast_response.raise_for_status()
+        hourly_forecast = forecast_response.json()
+
+        # Combine the current weather and hourly forecast
+        return {
+            'current': current_weather,
+            'hourly': hourly_forecast['list'][:12]  # Get next 12 hours of forecast
+        }
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching weather data: {e}")  # Log the error
+        return None
 
 @main.route('/weather', methods=['GET'])
 def weather():
@@ -219,7 +241,7 @@ def weather():
     lon = request.args.get('lon')
     
     if lat and lon:
-        weather_data = get_weather_by_coordinates(WEATHER_API_KEY, lat, lon)
+        weather_data = get_weather_by_coordinates(Config.WEATHER_API_KEY, lat, lon)
         if weather_data:
             return jsonify(weather_data)  # Send JSON response
         else:
@@ -260,7 +282,9 @@ def submit_preferences():
     return jsonify({"recommendations":user_preferences })
 
 
-
+@main.route('/weather-location', methods=['GET'])
+def weather_page():
+    return render_template('weather.html')
 
 
 def get_latitude_longitude(location):
@@ -302,10 +326,5 @@ def recommend():
 
     return render_template('result.html', username=_username, destinations=recommended_destinations.to_dict(orient='records'))
 
-def get_weather_by_coordinates(api_key, lat, lon):
-    url = f"http://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={api_key}&units=metric"
-    response = requests.get(url)
-    if response.status_code == 200:
-        return response.json()
-    else:
-        return None
+
+
