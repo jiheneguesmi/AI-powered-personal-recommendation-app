@@ -258,7 +258,7 @@ def preferences():
         return redirect('/')
     return render_template('preferences.html', username=_username)
 
-@main.route('/submit_preferences', methods=['POST'])
+@main.route('/submit_preferences', methods=['GET', 'POST'])
 def submit_preferences():
     form_data = request.json
     user_preferences = (
@@ -297,7 +297,7 @@ def get_latitude_longitude(location):
     except GeocoderTimedOut:
         return get_latitude_longitude(location)
 
-@main.route('/recommend', methods=['POST'])
+@main.route('/recommend', methods=['GET', 'POST'])
 def recommend():
     _username = session.get('username')
     if not _username:

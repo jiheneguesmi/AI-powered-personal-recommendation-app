@@ -179,7 +179,7 @@
                             <div class="progress-bar-fill" id="progressBar"></div>
                         </div>
 
-                        <form method="POST" action="/recommend">
+                        <form id="travelForm">
                             <!-- Profil de l'utilisateur -->
                             <div class="form-section active" id="section1">
                                 <h3>Profil de l'utilisateur</h3>
@@ -355,36 +355,32 @@
     </div>
     <!-- container-scroller -->
     <script>
-        let currentSection = 0;
-        const sections = document.querySelectorAll(".form-section");
-        const progressBar = document.getElementById("progressBar");
+        document.addEventListener("DOMContentLoaded", function () {
+            let currentSection = 0;
+            const sections = document.querySelectorAll(".form-section");
+            const progressBar = document.getElementById("progressBar");
 
-        function showSection(n) {
-            sections.forEach((section, index) => {
-                section.classList.toggle("active", index === n);
-            });
-            progressBar.style.width = ((n + 1) / sections.length) * 100 + "%";
-            document.getElementById("prevBtn").style.display = n === 0 ? "none" : "inline";
-            document.getElementById("submitForm").textContent = n === sections.length - 1 ? "Soumettre" : "Suivant";
-        }
-
-        function nextPrev(n) {
-            // Move to the next or previous section
-            currentSection += n;
-            // If the current section is the last one, allow form submission
-            if (currentSection >= sections.length) {
-                document.getElementById("travelForm").submit();
-                return false;
+            function showSection(n) {
+                sections.forEach((section, index) => {
+                    section.classList.toggle("active", index === n);
+                });
+                progressBar.style.width = ((n + 1) / sections.length) * 100 + "%";
+                document.getElementById("prevBtn").style.display = n === 0 ? "none" : "inline";
+                document.getElementById("submitForm").textContent = n === sections.length - 1 ? "Soumettre" : "Suivant";
             }
-            showSection(currentSection);
-        }
 
-        showSection(currentSection);
+            function nextPrev(n) {
+                currentSection += n;
 
-        document.getElementById("submitForm").addEventListener("click", function (event) {
-            if (currentSection === sections.length - 1) {
-                event.preventDefault();
+                // Prevent out-of-bounds navigation
+                if (currentSection >= sections.length) {
+                    submitForm();
+                    return false;
+                }
+                showSection(currentSection);
+            }
 
+            function submitForm() {
                 // Collect form data
                 const formData = {
                     age: document.getElementById("age").value,
@@ -402,25 +398,37 @@
                     specificActivities: document.getElementById("specificActivities").value
                 };
 
-                // Send data to the backend
-                fetch("/submit_preferences", {
+                fetch("/recommend", {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json"
                     },
                     body: JSON.stringify(formData)
                 })
-                    .then(response => response.json())
-                    .then(data => {
-                        // Store recommendations in sessionStorage to use on the results page
-                        sessionStorage.setItem('recommendations', JSON.stringify(data.recommendations));
-                        window.location.href = '/recommend'; // Redirect to results page
+                    .then(response => response.text()) // assuming HTML response
+                    .then(html => {
+                        document.open();   // Clear current document
+                        document.write(html);  // Write the HTML content returned by the server
+                        document.close();  // Close the document to render the new page
                     })
-
                     .catch(error => console.error("Erreur lors de l'envoi du formulaire :", error));
             }
+
+            // Handle button clicks
+            document.getElementById("submitForm").addEventListener("click", function (event) {
+                event.preventDefault();
+                if (currentSection === sections.length - 1) {
+                    submitForm();
+                } else {
+                    nextPrev(1);
+                }
+            });
+
+            // Initial display of the first section
+            showSection(currentSection);
         });
     </script>
+
     <!-- base:js -->
     <script src="static/vendors/js/vendor.bundle.base.js"></script>
     <!-- endinject -->
