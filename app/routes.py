@@ -1,4 +1,6 @@
 import os
+import pandas as pd
+
 from flask import Blueprint, render_template, request, jsonify, session, redirect
 from google_maps_reviews import ReviewsClient
 from outscraper import ApiClient
@@ -8,10 +10,27 @@ import requests
 from werkzeug.security import generate_password_hash, check_password_hash
 from azure.core.credentials import AzureKeyCredential
 from azure.ai.textanalytics import TextAnalyticsClient
+from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.neighbors import NearestNeighbors
+from geopy.geocoders import Nominatim
+from geopy.exc import GeocoderTimedOut
 
+# Create a Flask Blueprint
 main = Blueprint('main', __name__)
+geolocator = Nominatim(user_agent="geoapiExercises")
+# Load the dataset
+data_path = os.path.join(os.path.dirname(__file__), 'tunisie_destinations.csv')
+df = pd.read_csv(data_path)
+df.fillna('unknown', inplace=True)
 
-# Initialize Firebase Admin SDK with the service account key
+# Convert categorical columns to numeric with One-Hot Encoding
+df_encoded = pd.get_dummies(df, columns=['name', 'category', 'location', 'budget'])
+
+# Initialize the KNN model
+knn = NearestNeighbors(n_neighbors=3, metric='cosine')
+knn.fit(df_encoded)
+
+# Initialize Firebase Admin SDK
 cred = firebase_admin.credentials.Certificate(os.path.join(os.path.dirname(__file__), 'tunisia-tourism-firebase-adminsdk-seadi-18c763db2c.json'))
 firebase_admin.initialize_app(cred)
 db = firestore.client()
@@ -206,6 +225,82 @@ def weather():
         else:
             return {"error": "Error fetching weather data."}, 500
     return {"error": "No location provided."}, 400
+
+
+
+
+@main.route('/preferences')
+def preferences():
+    _username = session.get('username')
+    if not _username:
+        return redirect('/')
+    return render_template('preferences.html', username=_username)
+
+@main.route('/submit_preferences', methods=['POST'])
+def submit_preferences():
+    form_data = request.json
+    user_preferences = (
+        f"Âge : {form_data['age']}, "
+        f"Genre : {form_data['gender']}, "
+        f"Nationalité : {form_data['nationality']}, "
+        f"Fréquence des voyages en Tunisie : {form_data['travelFrequency']}, "
+        f"Type de vacances : {form_data['vacationType']}, "
+        f"Budget : {form_data['budget']}, "
+        f"Durée du séjour : {form_data['stayDuration']}, "
+        f"Saison préférée : {form_data['season']}, "
+        f"Taille du groupe : {form_data['groupSize']}, "
+        f"Category : {', '.join(form_data['interests'])}, "
+        f"Importance accordée au tourisme durable : {form_data['sustainableTourism']}, "
+        f"Prêt à faire des compromis : {form_data['compromise']}, "
+        f"Activités spécifiques : {form_data['specificActivities']}"
+    )
+    
+    print(user_preferences)
+   
+    return jsonify({"recommendations":user_preferences })
+
+
+
+
+
+def get_latitude_longitude(location):
+    try:
+        location_data = geolocator.geocode(location, timeout=10)
+        if location_data:
+            return location_data.latitude, location_data.longitude
+        else:
+            return None, None
+    except GeocoderTimedOut:
+        return get_latitude_longitude(location)
+
+@main.route('/recommend', methods=['POST'])
+def recommend():
+    _username = session.get('username')
+    if not _username:
+        return redirect('/')
+    # Get user preferences from the form
+    user_preferences = {
+        'budget': request.form.get('budget'),
+        'category': request.form.getlist('interests'),  # Get interests as a list
+        #'location': 'Tunis'  # Example location, modify as needed
+    }
+
+    # Filter destinations that match user preferences
+    recommended_df = df[(df['budget'] == user_preferences['budget']) & 
+                        (df['category'].isin(user_preferences['category'])) ]
+
+    # If no destinations match, use cosine similarity
+    if recommended_df.empty:
+        # Take the first destination as an example
+        selected_destination = df_encoded.iloc[0].values.reshape(1, -1)
+        similarities = cosine_similarity(selected_destination, df_encoded)
+        similar_indices = similarities.argsort()[0][::-1]
+        similar_destinations = df.iloc[similar_indices]
+        recommended_destinations = similar_destinations.head(3)
+    else:
+        recommended_destinations = recommended_df.head(3)
+
+    return render_template('result.html', username=_username, destinations=recommended_destinations.to_dict(orient='records'))
 
 def get_weather_by_coordinates(api_key, lat, lon):
     url = f"http://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={api_key}&units=metric"
