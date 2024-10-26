@@ -15,7 +15,7 @@ from sklearn.neighbors import NearestNeighbors
 from geopy.geocoders import Nominatim
 from geopy.exc import GeocoderTimedOut
 
-<<<<<<< HEAD
+
 #Importation Tache 3
 from langchain_core.prompts import PromptTemplate, ChatPromptTemplate
 from langchain import hub
@@ -31,9 +31,8 @@ from langchain_community.document_loaders import PyPDFLoader
 from langchain_google_genai import GoogleGenerativeAIEmbeddings, ChatGoogleGenerativeAI
 import numpy as np
 
-=======
+
 # Create a Flask Blueprint
->>>>>>> ff29182c1a2dcfbd8ad1b8667e40e473d9733042
 main = Blueprint('main', __name__)
 geolocator = Nominatim(user_agent="geoapiExercises")
 # Load the dataset
@@ -64,7 +63,7 @@ def signup():
         username = data['username']
         email = data['email']
         password = data['password']
-
+        
         # Check if the email already exists
         try:
             auth.get_user_by_email(email)
@@ -326,14 +325,13 @@ def get_weather_by_coordinates(api_key, lat, lon):
     if response.status_code == 200:
         return response.json()
     else:
-<<<<<<< HEAD
         return None
+
 
 #Tache3
 #Architecture RAG
 #Lecture et Analyse des données du site Web
 #Utilisation du chargeur de Documents WebBaseLoader de LangChain  
-
 
 pages = PyPDFLoader(r"C:\\Users\\IMINFO\\tunisian_tourism\\app\\templates\\activity-tourisme-tunisie.pdf").load_and_split()
 print("Read {0} pages".format(len(pages)))
@@ -473,6 +471,3 @@ def submit_preferences():
     return jsonify({"recommendations": response})
 
 #Fin Tache 3
-=======
-        return None
->>>>>>> ff29182c1a2dcfbd8ad1b8667e40e473d9733042

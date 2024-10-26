@@ -4,3 +4,22 @@ requests==2.28.0
 firebase-admin==5.3.0
 joblib==1.2.0 
 Werkzeug==2.3.0  
+google-maps-reviews
+outscraper
+azure-ai-textanalytics
+pandas
+geopy
+scikit-learn
+
+#BIB for Task 3
+langchain
+langchain-core
+langchain-community
+langchain-google-genai
+google-cloud-firestore
+gunicorn
+chromadb==0.5.0
+beautifulsoup4
+pypdf
+nltk
+faiss-cpu
