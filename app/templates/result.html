@@ -5,7 +5,17 @@
     <!-- Required meta tags -->
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <title>Tunisa Tourism Dashboard</title>
+    <title>Recommended Destinations</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/css/bootstrap.min.css">
+    <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
+    <style>
+        .destination-card {
+            margin-bottom: 20px;
+        }
+    </style>
     <!-- base:css -->
     <link rel="stylesheet" href="static/vendors/mdi/css/materialdesignicons.min.css">
     <link rel="stylesheet" href="static/vendors/css/vendor.bundle.base.css">
@@ -119,51 +129,56 @@
             <!-- partial -->
             <div class="main-panel">
                 <div class="content-wrapper">
-                    <form action="/find_places" method="post">
-                        <fieldset>
-                            <legend style="text-align: center;">Search by Region(Leave State on Choose...) or
-                                State(leave Region empty)
-                                or both(make sure that the Region is part of the selected State)</legend>
-                            <div class="form-row d-flex justify-content-center" style="width: 70%; margin-left: 15%;">
-                                <div class="form-group col-md-4">
-                                    <label for="region">Region</label>
-                                    <input type="text" id="region" name="region" class="form-control"
-                                        placeholder="Type in a location">
+                    <div class="container mt-5">
+                        <h1 class="text-center">Recommended Destinations</h1>
+                        <div class="row">
+                            {% if destinations %}
+                            {% for destination in destinations %}
+                            <div class="col-md-4">
+                                <div class="card destination-card">
+                                    <img src="{{ destination.image_url }}" class="card-img-top"
+                                        alt="{{ destination.name }}">
+                                    <div class="card-body">
+                                        <h5 class="card-title">{{ destination.name }}</h5>
+                                        <p class="card-text"><strong>Category:</strong> {{ destination.category }}</p>
+                                        <p class="card-text"><strong>Location:</strong> {{ destination.location }}</p>
+                                        <p class="card-text"><strong>Budget:</strong> {{ destination.budget }}</p>
+                                        <p class="card-text"><strong>Description:</strong> {{ destination.description }}
+                                        </p>
+                                        <a href="{{ destination.link }}" class="btn btn-primary">View More</a>
+                                        <button class="btn btn-secondary"
+                                            onclick="showItinerary('{{ destination.latitude }},{{ destination.longitude }}')">Show
+                                            Itinerary</button>
+                                    </div>
                                 </div>
-                                <div class="form-group col-md-4">
-                                    <label for="state">State</label>
-                                    <select id="state" name="state" class="form-control">
-                                        <option selected>Choose...</option>
-                                        <option>Ariana</option>
-                                        <option>Béja</option>
-                                        <option>Ben Arous</option>
-                                        <option>Bizerte</option>
-                                        <option>Gabès</option>
-                                        <option>Gafsa</option>
-                                        <option>Jendouba</option>
-                                        <option>Kairouan</option>
-                                        <option>Kasserine</option>
-                                        <option>Kebili</option>
-                                        <option>Kef</option>
-                                        <option>Mahdia</option>
-                                        <option>Manouba</option>
-                                        <option>Medenine</option>
-                                        <option>Monastir</option>
-                                        <option>Nabeul</option>
-                                        <option>Sfax</option>
-                                        <option>Sidi Bouzid</option>
-                                        <option>Siliana</option>
-                                        <option>Sousse</option>
-                                        <option>Tataouine</option>
-                                        <option>Tozeur</option>
-                                        <option>Tunis</option>
-                                        <option>Zaghouan</option>
-                                    </select>
-                                </div>
-                                <button type="submit" class="btn btn-primary btn-lg btn-block">Search</button>
                             </div>
-                        </fieldset>
-                    </form>
+                            {% endfor %}
+                            {% else %}
+                            <div class="col-12">
+                                <div class="alert alert-warning" role="alert">
+                                    No destinations found based on your preferences. Please adjust your criteria and try
+                                    again.
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div id="mapModal" class="modal" tabindex="-1" role="dialog">
+                        <div class="modal-dialog" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Itinerary</h5>
+                                    <button type="button" class="close" onclick="closeModal()" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body">
+                                    <div id="map" style="height: 400px;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <footer class="footer">
                     <div class="card">
@@ -185,7 +200,56 @@
         <!-- page-body-wrapper ends -->
     </div>
     <!-- container-scroller -->
+    <script>
+        function showItinerary(destination) {
+            // Get the user's current location
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function (position) {
+                    const userLat = position.coords.latitude;
+                    const userLon = position.coords.longitude;
 
+                    // Initialize a map
+                    const map = L.map('map').setView([userLat, userLon], 13);
+
+                    // Add OpenStreetMap tile layer
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        maxZoom: 19,
+                    }).addTo(map);
+
+                    // Create markers for user and destination
+                    L.marker([userLat, userLon]).addTo(map).bindPopup('Your Location').openPopup();
+
+                    // Assuming destination is in the format "lat,lon"
+                    const [destLat, destLon] = destination.split(',');
+                    L.marker([destLat, destLon]).addTo(map).bindPopup('Destination').openPopup();
+
+                    // Create a routing layer
+                    const routingControl = L.Routing.control({
+                        waypoints: [
+                            L.latLng(userLat, userLon),
+                            L.latLng(destLat, destLon)
+                        ],
+                        routeWhileDragging: true
+                    }).addTo(map);
+
+                    // Display the map in a modal
+                    const modal = document.getElementById('mapModal');
+                    modal.style.display = "block";
+                }, function () {
+                    alert("Unable to retrieve your location.");
+                });
+            } else {
+                alert("Geolocation is not supported by this browser.");
+            }
+        }
+
+        // Close modal function
+        function closeModal() {
+            document.getElementById('mapModal').style.display = "none";
+        }
+    </script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/js/bootstrap.bundle.min.js"></script>
     <!-- base:js -->
     <script src="static/vendors/js/vendor.bundle.base.js"></script>
     <!-- endinject -->

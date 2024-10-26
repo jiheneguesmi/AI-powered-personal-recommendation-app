@@ -7,3 +7,6 @@ Werkzeug==2.3.0
 google-maps-reviews
 outscraper
 azure-ai-textanalytics
+pandas
+geopy
+scikit-learn
