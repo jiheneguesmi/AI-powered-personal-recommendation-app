@@ -116,6 +116,10 @@
             <!-- partial -->
             <div class="main-panel">
                 <div class="content-wrapper">
+                    <h1 style="text-align: center;">{{ score_positive }} of all reviews are positive</h1>
+                    <h1 style="text-align: center;">{{ score_negative }} of all reviews are negative</h1>
+                    <h1 style="text-align: center;">{{ score_neutral }} of all reviews are neutral</h1>
+                    <h1 style="text-align: center;">You will find only positive or neutral reviews here</h1>
                     {% if llist %}
                     {% for ll in llist %}
                     <div class="card">

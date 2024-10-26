@@ -187,19 +187,30 @@ def reviews():
                 text_analytics_client = TextAnalyticsClient(endpoint, AzureKeyCredential(key))
                 results = ReviewsClient.google_maps_reviews([id], reviews_limit=10, language='en')
                 ll = list()
+                index_total = 0
+                index_negative = 0
+                index_positive = 0
+                index_neutral = 0
                 for review in results:
                     review_data = review.get('reviews_data')
                     for rr in review_data:
                         dd = dict()
                         dd['author_title'] = rr.get('author_title')
                         dd['review_text'] = rr.get('review_text')
+                        index_total = index_total + 1
                         if dd.get('author_title') is not None and dd.get('review_text') is not None:
                             response = text_analytics_client.analyze_sentiment([dd.get('review_text')])
                             for result in response:
                                 if result.kind == "SentimentAnalysis":
-                                    if (result.sentiment == 'positive') or (result.sentiment == 'neutral'):
+                                    if (result.sentiment == 'positive'):
+                                        index_positive = index_positive + 1
                                         ll.append(dd)
-                return render_template('reviews.html', username=_username, place_name=name, llist=ll)
+                                    if (result.sentiment == 'neutral'):
+                                        index_neutral = index_neutral + 1
+                                        ll.append(dd)
+                                    if (result.sentiment == 'negative'):
+                                        index_negative = index_negative + 1
+                return render_template('reviews.html', username=_username, score_positive=(index_positive / index_total), score_neutral=(index_neutral / index_total),score_negative=(index_negative / index_total), place_name=name, llist=ll)
             except Exception as e:
                 # Log the error and render an error page
                 print(f"API client error: {e}")
