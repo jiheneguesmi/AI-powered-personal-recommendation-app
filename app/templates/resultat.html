@@ -28,7 +28,7 @@
                                 <a href="/weather-location?location={{destination.location}}" class="card-text" target="_blank"><strong>Get weather in this location</strong></a><br>
                                 <a href="/find_places?state={{destination.location}}" class="card-text" target="_blank"><strong>Get more local experiences in this location</strong></a><br>
                                 <button class="btn btn-secondary" onclick="showItinerary('{{ destination.latitude }},{{ destination.longitude }}')">Show Itinerary</button>
-                                <a href="{{ url_for('main.locationChoix', destination_name=destination.name) }}" class="btn btn-primary">View Touristics activities of the place</a>
+                                <a href="{{ url_for('main.locationChoix', destination_name=destination.location) }}" class="btn btn-primary">View Touristics activities of the place</a>
                             </div>
                         </div>
                     </div>

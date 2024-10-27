@@ -17,6 +17,58 @@
   <link rel="stylesheet" href="static/css/style_spica.css">
   <!-- endinject -->
   <link rel="shortcut icon" href="static/img/favicon.png" />
+  
+  <style>
+    .recommendations-section {
+        opacity: 1; /* Changed from 0 to ensure visibility */
+        margin-top: 20px;
+        padding: 15px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+    }
+    
+    .activity-card {
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        padding: 15px;
+        background-color: white;
+    }
+    
+    .alert {
+        padding: 15px;
+        margin-bottom: 20px;
+        border: 1px solid transparent;
+        border-radius: 4px;
+    }
+    
+    .alert-info {
+        color: #0c5460;
+        background-color: #d1ecf1;
+        border-color: #bee5eb;
+    }
+    
+    .alert-danger {
+        color: #721c24;
+        background-color: #f8d7da;
+        border-color: #f5c6cb;
+    }
+    
+    .spinner-border {
+        display: inline-block;
+        width: 2rem;
+        height: 2rem;
+        vertical-align: text-bottom;
+        border: .25em solid currentColor;
+        border-right-color: transparent;
+        border-radius: 50%;
+        animation: spinner-border .75s linear infinite;
+    }
+    
+    @keyframes spinner-border {
+        to { transform: rotate(360deg); }
+    }
+    </style>
 </head>
 
 <body>
@@ -114,130 +166,77 @@
                 <h3 class="card-title mb-4">Préférences de voyage pour {{ destination_name }}</h3>
         
                 <form id="preferencesForm" class="forms-sample">
-                                                <!-- Profil de l'utilisateur -->
-                                                <div class="form-section active" id="section1">
-                                                  <h3>Profil de l'utilisateur</h3>
-                                                  <div class="form-group">
-                                                      <label for="age">Tranche d'âge :</label>
-                                                      <select id="age">
-                                                          <option>18-25</option>
-                                                          <option>26-35</option>
-                                                          <option>36-45</option>
-                                                          <option>46 et plus</option>
-                                                      </select>
-                                                  </div>
-                                                  <div class="form-group">
-                                                      <label for="gender">Genre :</label>
-                                                      <select id="gender">
-                                                          <option>Masculin</option>
-                                                          <option>Féminin</option>
-                                                          <option>Autre</option>
-                                                      </select>
-                                                  </div>
-                                                  <div class="form-group">
-                                                      <label for="nationality">Nationalité :</label>
-                                                      <input type="text" id="nationality">
-                                                  </div>
-                                                  <div class="form-group">
-                                                      <label for="travelFrequency">Fréquence des voyages en Tunisie :</label>
-                                                      <select id="travelFrequency">
-                                                          <option>Élevée</option>
-                                                          <option>Moyenne</option>
-                                                          <option>Basse</option>
-                                                      </select>
-                                                  </div>
-                                              </div>
-                  
-                                              <!-- Préférences de voyage -->
-                                              <div class="form-section" id="section2">
-                                                  <h3>Préférences de voyage</h3>
-                                                  <div class="form-group">
-                                                      <label for="vacationType">Type de vacances :</label>
-                                                      <select id="vacationType">
-                                                          <option>Détente</option>
-                                                          <option>Aventure</option>
-                                                          <option>Culturelle</option>
-                                                      </select>
-                                                  </div>
-                                                  <div class="form-group">
-                                                      <label for="budget">Budget :</label>
-                                                      <select id="budget">
-                                                          <option>Low</option>
-                                                          <option>Meduim</option>
-                                                          <option>High</option>
-                                                      </select>
-                                                  </div>
-                                                  <div class="form-group">
-                                                      <label for="stayDuration">Durée du séjour :</label>
-                                                      <select id="stayDuration">
-                                                          <option>Moins de 2 semaines</option>
-                                                          <option>Moins d'1 mois</option>
-                                                          <option>1 mois et plus</option>
-                                                      </select>
-                                                  </div>
-                                                  <div class="form-group">
-                                                      <label for="season">Saison préférée :</label>
-                                                      <select id="season">
-                                                          <option>Hiver</option>
-                                                          <option>Été</option>
-                                                          <option>Automne</option>
-                                                          <option>Printemps</option>
-                                                      </select>
-                                                  </div>
-                                                  <div class="form-group">
-                                                      <label for="groupSize">Taille du groupe :</label>
-                                                      <select id="groupSize">
-                                                          <option>Moins de 5 personnes</option>
-                                                          <option>5 personnes et plus</option>
-                                                      </select>
-                                                  </div>
-                                              </div>
-                  
-                                              <!-- Intérêts -->
-                                              <div class="form-section" id="section3">
-                                                  <h3>Intérêts</h3>
-                                                  <div class="form-group">
-                                                      <label><input type="checkbox" name="interest" value="Historical Site"> Historical
-                                                          Site</label>
-                                                  </div>
-                                                  <div class="form-group">
-                                                      <label><input type="checkbox" name="interest" value="Cultural Landmark"> Cultural
-                                                          Landmark</label>
-                                                  </div>
-                                                  <div class="form-group">
-                                                      <label><input type="checkbox" name="interest" value="Eco-tourism Spot"> Eco-tourism
-                                                          Spot</label>
-                                                  </div>
-                                                  <div class="form-group">
-                                                      <label><input type="checkbox" name="interest" value="Natural Landmark"> Natural
-                                                          Landmark</label>
-                                                  </div>
-                                                  <div class="form-group">
-                                                      <label><input type="checkbox" name="interest" value="Museum"> Museum</label>
-                                                  </div>
-                                                  <div class="form-group">
-                                                      <label><input type="checkbox" name="interest" value="Religious Site"> Religious
-                                                          Site</label>
-                                                  </div>
-                                                  <div class="form-group">
-                                                      <label><input type="checkbox" name="interest" value="Local Experience"> Local
-                                                          Experience</label>
-                                                  </div>
-                                                  <div class="form-group">
-                                                      <label><input type="checkbox" name="interest" value="Family Activity"> Family
-                                                          Activity</label>
-                                                  </div>
-                                                  <div class="form-group">
-                                                      <label><input type="checkbox" name="interest" value="Cultural Experience"> Cultural
-                                                          Experience</label>
-                                                  </div>
-                                                  <div class="form-group">
-                                                      <label><input type="checkbox" name="interest" value="Hidden Gem"> Hidden Gem</label>
-                                                  </div>
-                                              </div>
-                    <button type="submit" class="btn btn-primary">Soumettre</button>
-                </form>
-        
+                  <!-- Profil de l'utilisateur -->
+                  <div class="form-section active" id="section1">
+                    <h3>Profil de l'utilisateur</h3>
+                    <div class="form-group">
+                        <label for="age">Tranche d'âge :</label>
+                        <select id="age">
+                            <option>18-25</option>
+                            <option>26-35</option>
+                            <option>36-45</option>
+                            <option>46 et plus</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="gender">Genre :</label>
+                        <select id="gender">
+                            <option>Masculin</option>
+                            <option>Féminin</option>
+                            <option>Autre</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="nationality">Nationalité :</label>
+                        <input type="text" id="nationality">
+                    </div>
+                    <div class="form-group">
+                        <label for="travelFrequency">Fréquence des voyages en Tunisie :</label>
+                        <select id="travelFrequency">
+                            <option>Élevée</option>
+                            <option>Moyenne</option>
+                            <option>Basse</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Préférences de voyage -->
+                <div class="form-section" id="section2">
+                    <h3>informations de voyage</h3>
+  
+                    <div class="form-group">
+                        <label for="stayDuration">Durée du séjour :</label>
+                        <select id="stayDuration">
+                            <option>Moins de 2 semaines</option>
+                            <option>Moins d'1 mois</option>
+                            <option>1 mois et plus</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="season">Saison préférée :</label>
+                        <select id="season">
+                            <option>Hiver</option>
+                            <option>Été</option>
+                            <option>Automne</option>
+                            <option>Printemps</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="groupSize">Taille du groupe :</label>
+                        <select id="groupSize">
+                            <option>1 personnes</option>
+                            <option>2 personnes</option>
+                            <option>3 personnes</option>
+                            <option>4 personnes</option>
+                            <option>5 personnes et plus</option>
+                        </select>
+                    </div>
+                </div>
+
+      
+<button type="submit" class="btn btn-primary">Soumettre</button>
+</form>
+
                 <div id="recommendationsContainer" class="recommendations-section mt-4" style="display: none;">
                     <div class="card">
                         <div class="card-body">
@@ -290,31 +289,150 @@
   <script>
     document.getElementById('preferencesForm').addEventListener('submit', function(event) {
         event.preventDefault();
-
-        const formData = new FormData(this);
-        const preferences = {};
-        formData.forEach((value, key) => {
-            preferences[key] = value;
-        });
-
+        console.log('Form submitted'); // Debug log
+    
+        // Afficher immédiatement le conteneur de recommandations
+        const recommendationsContainer = document.getElementById('recommendationsContainer');
+        const recommendationsList = document.getElementById('recommendationsList');
+        
+        // Message de chargement
+        recommendationsContainer.style.display = 'block';
+        recommendationsList.innerHTML = `
+            <div class="alert alert-info">
+                <div class="spinner-border text-primary me-2" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                Génération d'activités correspondante à vos critères...
+            </div>
+        `;
+    
+        // Collecter les données du formulaire
+        const formData = {
+            age: document.getElementById('age').value,
+            gender: document.getElementById('gender').value,
+            nationality: document.getElementById('nationality').value,
+            travelFrequency: document.getElementById('travelFrequency').value,
+            stayDuration: document.getElementById('stayDuration').value,
+            season: document.getElementById('season').value,
+            groupSize: document.getElementById('groupSize').value
+        };
+    
+        console.log('Form data:', formData); // Debug log
         const destinationName = "{{ destination_name }}";
-
+        console.log('Destination:', destinationName); // Debug log
+    
         fetch('/submit_location', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ destination_name: destinationName, preferences: preferences })
+            body: JSON.stringify({
+                destination_name: destinationName,
+                preferences: formData
+            })
         })
-        .then(response => response.json())
+        .then(response => {
+            console.log('Raw response:', response); // Debug log
+            return response.json();
+        })
         .then(data => {
-            const recommendationsList = document.getElementById('recommendationsList');
-            recommendationsList.innerHTML = data.recommendations;
-            document.getElementById('recommendationsContainer').style.display = 'block';
+            console.log('Received data:', data); // Debug log
+            
+            try {
+                // Afficher les données brutes d'abord pour debug
+                recommendationsList.innerHTML = `
+                    <div class="alert alert-info">
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    </div>
+                `;
+    
+                const recommendations = JSON.parse(data.recommendations);
+                displayRecommendations(recommendations);
+            } catch (e) {
+                console.error('Error parsing JSON:', e); // Debug log
+                recommendationsList.innerHTML = `
+                    <div class="alert alert-danger">
+                        Erreur de traitement: ${e.message}<br>
+                        Données reçues: <pre>${JSON.stringify(data, null, 2)}</pre>
+                    </div>
+                `;
+            }
         })
-        .catch(error => console.error('Error:', error));
+        .catch(error => {
+            console.error('Fetch error:', error); // Debug log
+            recommendationsList.innerHTML = `
+                <div class="alert alert-danger">
+                    Erreur de communication avec le serveur: ${error.message}
+                </div>
+            `;
+        });
     });
-</script>
+    
+    function displayRecommendations(recommendations) {
+        console.log('Displaying recommendations:', recommendations); // Debug log
+        const recommendationsList = document.getElementById('recommendationsList');
+        let html = '';
+    
+        // Vérifier si nous avons des activités
+        if (recommendations.activites && recommendations.activites.length > 0) {
+            html += '<div class="activities-section">';
+            recommendations.activites.forEach((activity, index) => {
+                html += `
+                    <div class="activity-card">
+                        <div class="activity-header">
+                            <h5 class="mb-0">${activity.nom || 'Activité sans nom'}</h5>
+                        </div>
+                        <div class="activity-content">
+                            <p>${activity.description || 'Aucune description disponible'}</p>
+                            <div class="activity-details">
+                                <div class="detail-item">
+                                    <strong>Lieu:</strong> ${activity.lieu || 'Non spécifié'}
+                                </div>
+                                <div class="detail-item">
+                                    <strong>Budget:</strong> ${activity.budget || 'Non spécifié'}
+                                </div>
+                                <div class="detail-item">
+                                    <strong>Durée:</strong> ${activity.duree || 'Non spécifiée'}
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <strong>Conseils:</strong>
+                                <p>${activity.conseils || 'Aucun conseil disponible'}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+        } else {
+            html += '<div class="alert alert-warning">Aucune activité n\'a été trouvée.</div>';
+        }
+    
+        // Afficher le programme si disponible
+        if (recommendations["programme facultatif pur vous"] && recommendations["programme facultatif pur vous"].jour) {
+            html += `
+                <div class="programme-jour mt-4">
+                    <h5 class="mb-3">Programme suggéré</h5>
+                    <div class="timeline-item">
+                        <strong>Matin:</strong> ${recommendations["programme facultatif pur vous"].jour.matin || 'Non spécifié'}
+                    </div>
+                    <div class="timeline-item">
+                        <strong>Après-midi:</strong> ${recommendations["programme facultatif pur vous"].jour.apresmidi || 'Non spécifié'}
+                    </div>
+                    <div class="timeline-item">
+                        <strong>Soir:</strong> ${recommendations["programme facultatif pur vous"].jour.soir || 'Non spécifié'}
+                    </div>
+                </div>
+            `;
+        }
+    
+        recommendationsList.innerHTML = html;
+        
+        // Ajouter la classe d'animation
+        const container = document.getElementById('recommendationsContainer');
+        container.classList.add('show');
+    }
+    </script>
 </body>
 
 </html>

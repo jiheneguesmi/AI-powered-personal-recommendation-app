@@ -474,7 +474,8 @@ Randonnées chamelières avec guides locaux
 Observation des étoiles (astrotourisme)
 Découverte de la flore saharienne avec un botaniste
 Participation aux projets de préservation des espèces
-
+Zaghouan: Rue de Zaghouan vers 1900 Idéal pour une séjour moins 2 semaines, moins d’un mois ou un mois au plus pour les tranches d’age 18-25, 26-35 ou 36-45 pour homme ou femme toute nationnalité 
+peu importe la taille du groupe 1,2,3,4,5 personnes et plus.
 Sousse : Visite de Port El Kantaoui
 ribat de Monastir : Ribat de Monastir, Palais présidentiel Habib Bourguiba
 ouverte des techniques traditionnelles de distillation du bigaradier
@@ -516,15 +517,41 @@ Question: {context}
 Important:
 - Ne propose que des activités réellement disponibles à {user_places} ou dans un rayon très proche
 - Ne mentionne PAS d'activités dans d'autres villes de Tunisie
-- Propose un programme au user s'il passe moins de 5jours en tunisie
-Format pour chaque recommandation sous forme:
-Activité : [nom de l'activité]
-Description : [description détaillée]
-Lieu : [emplacement précis dans ou près de {user_places}]
-Budget approximatif : [coût en TND]
-Durée de l'activité : [durée estimée]
-Conseils supplémentaires : [conseils pratiques]
+-Toutes les activités que que va proposer sont Idéal pour une séjour moins 2 semaines, moins d’un mois ou un mois au plus pour les tranches d’age 18-25, 26-35 ou 36-45 pour homme ou femme toute nationnalité 
+peu importe la taille du groupe 1,2,3,4,5 personnes et plus.
+- Propose un programme de la journée en fonction de tes connaissance générales au user pour bien méner l'activité c'est une recommandation pour lui
 
+IMPORTANT : Tu DOIS structurer ta réponse exactement selon ce format JSON, sans aucune autre explication :
+
+accolade
+    "activites": [
+        accolade
+            "nom": "Nom de l'activité 1",
+            "description": "Description détaillée",
+            "lieu": "Emplacement précis",
+            "budget": "XX TND",
+            "duree": "Durée estimée",
+            "conseils": "Conseils pratiques"
+        accolade,
+        accolade
+            "nom": "Nom de l'activité 2",
+            "description": "Description détaillée",
+            "lieu": "Emplacement précis",
+            "budget": "XX TND",
+            "duree": "Durée estimée",
+            "conseils": "Conseils pratiques"
+        accolade
+    ],
+    "programme facultatif pur vous": accolade
+        "jour": accolade
+            "matin": "Activité du matin",
+            "apresmidi": "Activité de l'après-midi",
+            "soir": "Activité du soir"
+        accolade
+    accolade
+accolade
+
+Ne fournis que le JSON, sans texte avant ou après. Assure-toi que le JSON est valide et correctement formaté.
 Réponse:"""
 
 llm_prompt = PromptTemplate.from_template(llm_prompt_template)
@@ -536,32 +563,55 @@ rag_chain = (
     | llm
     | StrOutputParser()
 )
+import json
 
 @main.route('/locationChoice')
 def locationChoix():
     destination_name = request.args.get('destination_name')
     return render_template('locationChoice.html', destination_name=destination_name)
-
-
 @main.route('/submit_location', methods=['POST'])
 def submit_location():
-    form_data = request.json
-    user_places = form_data.get('destination_name')
-    user_preferences = form_data.get('preferences')
+    try:
+        form_data = request.json
+        print("Received form data:", form_data)  # Debug log
 
-    print(user_places)
-    print(user_preferences)
+        user_places = form_data.get('destination_name')
+        user_preferences = form_data.get('preferences')
 
-    # Créer le prompt avec la ville spécifique et les préférences de l'utilisateur
-    query = f"Quelles sont les activités touristiques disponibles à {user_places} en tenant en compte {user_preferences}?"
+        print("User places:", user_places)  # Debug log
+        print("User preferences:", user_preferences)  # Debug log
 
-    # Appeler la chaîne RAG
-    response = rag_chain.invoke(query, user_places=user_places, user_preferences=user_preferences)
-    print(response)
-    return jsonify({"recommendations": response})
+        # Créer le prompt avec la ville spécifique et les préférences de l'utilisateur
+        query = f"Quelles sont les activités touristiques disponibles à {user_places} en tenant en compte {user_preferences}?"
+        print("Query:", query)  # Debug log
 
+        # Appeler la chaîne RAG
+        response = rag_chain.invoke(query, user_places=user_places, user_preferences=user_preferences)
+        print("Raw response from LLM:", response)  # Debug log
 
+        # Vérifier si la réponse est déjà un JSON valide
+        if isinstance(response, str):
+            try:
+                response = json.loads(response)
+            except json.JSONDecodeError as e:
+                print("JSON decode error:", e)  # Debug log
+                return jsonify({
+                    "error": "Invalid JSON response from LLM",
+                    "raw_response": response
+                }), 500
+
+        return jsonify({"recommendations": json.dumps(response)})
+
+    except Exception as e:
+        print("Error in submit_location:", str(e))  # Debug log
+        return jsonify({
+            "error": "Server error",
+            "message": str(e)
+        }), 500
+        
 #Fin Tache 3
+
+
 @main.route('/feed_back', methods=['GET', 'POST'])
 def feed_back():
     _username = session.get('username')
