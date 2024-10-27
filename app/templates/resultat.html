@@ -21,12 +21,14 @@
                         <div class="card destination-card">
                             <img src="{{ destination.image_url }}" class="card-img-top" alt="{{ destination.name }}">
                             <div class="card-body">
-                                <h5 class="card-title">{{ destination.name }}</h5>
+                                <h5 class="card-title">Place: {{ destination.name }}</h5>
                                 <p class="card-text"><strong>Category:</strong> {{ destination.category }}</p>
                                 <p class="card-text"><strong>Location:</strong> {{ destination.location }}</p>
                                 <p class="card-text"><strong>Budget:</strong> {{ destination.budget }}</p>
-                                <p class="card-text"><strong>Description:</strong> {{ destination.description }}</p>
-                                <a href="{{ destination.link }}" class="btn btn-primary">View More</a>
+                                <a href="/weather-location?location={{destination.location}}" class="card-text" target="_blank"><strong>Get weather in this location</strong></a><br>
+                                <a href="/find_places?state={{destination.location}}" class="card-text" target="_blank"><strong>Get more local experiences in this location</strong></a><br>
+                                <button class="btn btn-secondary" onclick="showItinerary('{{ destination.latitude }},{{ destination.longitude }}')">Show Itinerary</button>
+                                <a href="{{ url_for('main.locationChoix', destination_name=destination.name) }}" class="btn btn-primary">View Touristics activities of the place</a>
                             </div>
                         </div>
                     </div>

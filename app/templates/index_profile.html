@@ -45,17 +45,17 @@
           </a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="/preferences">
+          <a class="nav-link" href="{{url_for('main.show_recommendation_form')}}">
             <i class="mdi mdi-clock menu-icon"></i>
-            <span class="menu-title">Find iteneraries</span>
-          </a>
+            <span class="menu-title">Find Places</span>
+        </a>
         </li>
-        <li class="nav-item">
+        <!--<li class="nav-item">
           <a class="nav-link" href="pages/icons/mdi.html">
             <i class="mdi mdi-emoticon menu-icon"></i>
             <span class="menu-title">Icons</span>
           </a>
-        </li>
+        </li>-->
       </ul>
     </nav>
     <!-- partial -->
@@ -99,7 +99,7 @@
               </a>
             </li>
             <li class="nav-item">
-              <a href="{{url_for('main.preferences')}}" class="nav-link icon-link">
+              <a href="{{url_for('main.show_recommendation_form')}}" class="nav-link icon-link">
                 <i class="mdi mdi-web"></i>
               </a>
             </li>

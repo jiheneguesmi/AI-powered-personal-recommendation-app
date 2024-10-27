@@ -1,7 +1,8 @@
 import os
 import pandas as pd
 from .config import Config
-from flask import Blueprint, render_template, request, jsonify, session, redirect
+from flask import Blueprint, render_template, request, jsonify, session, redirect, url_for
+from .forms import RecommendationForm
 from google_maps_reviews import ReviewsClient
 from outscraper import ApiClient
 import firebase_admin
@@ -14,7 +15,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.neighbors import NearestNeighbors
 from geopy.geocoders import Nominatim
 from geopy.exc import GeocoderTimedOut
-
+from .forms import RecommendationForm
 
 #Importation Tache 3
 from langchain_core.prompts import PromptTemplate, ChatPromptTemplate
@@ -35,17 +36,8 @@ import numpy as np
 # Create a Flask Blueprint
 main = Blueprint('main', __name__)
 geolocator = Nominatim(user_agent="geoapiExercises")
-# Load the dataset
-data_path = os.path.join(os.path.dirname(__file__), 'tunisie_destinations.csv')
-df = pd.read_csv(data_path)
-df.fillna('unknown', inplace=True)
 
-# Convert categorical columns to numeric with One-Hot Encoding
-df_encoded = pd.get_dummies(df, columns=['name', 'category', 'location', 'budget'])
 
-# Initialize the KNN model
-knn = NearestNeighbors(n_neighbors=3, metric='cosine')
-knn.fit(df_encoded)
 
 # Initialize Firebase Admin SDK
 cred = firebase_admin.credentials.Certificate(os.path.join(os.path.dirname(__file__), 'tunisia-tourism-firebase-adminsdk-seadi-18c763db2c.json'))
@@ -150,6 +142,12 @@ def find_places():
         if (not _region) and (_state == 'Choose...'):
             return render_template('find_local_experiences.html', username=_username)
         return render_template('find_places.html', username=_username, region=_region, state=_state)
+    if request.method == 'GET' and _username:
+        _region = request.args.get('region')
+        _state = request.args.get('state')
+        if (not _region) and (not _state):
+            return render_template('find_local_experiences.html', username=_username)
+        return render_template('find_places.html', username=_username, region=_region, state=_state)
     return redirect('/')
 
 @main.route('/places', methods=['GET', 'POST'])
@@ -167,7 +165,7 @@ def places():
             searchString = searchString + ' ' + state
         results = PlacesClient.google_maps_search(
         [searchString],
-        limit=10, # limit of palces per each query
+        limit=100, # limit of palces per each query
         language='en',
         region='TN',
         )
@@ -202,21 +200,25 @@ def reviews():
                 endpoint = os.environ['AZURE_TEXT_ANALYTICS_ENDPOINT']
                 key = os.environ['AZURE_TEXT_ANALYTICS_KEY']
                 text_analytics_client = TextAnalyticsClient(endpoint, AzureKeyCredential(key))
-                results = ReviewsClient.google_maps_reviews([id], reviews_limit=10, language='en')
+                results = ReviewsClient.google_maps_reviews([id], reviews_limit=100, language='en')
                 ll = list()
+                index_total = 0
+                index_positive = 0
                 for review in results:
                     review_data = review.get('reviews_data')
                     for rr in review_data:
                         dd = dict()
                         dd['author_title'] = rr.get('author_title')
                         dd['review_text'] = rr.get('review_text')
+                        index_total = index_total + 1
                         if dd.get('author_title') is not None and dd.get('review_text') is not None:
                             response = text_analytics_client.analyze_sentiment([dd.get('review_text')])
                             for result in response:
                                 if result.kind == "SentimentAnalysis":
-                                    if (result.sentiment == 'positive') or (result.sentiment == 'neutral'):
+                                    if (result.sentiment == 'positive'):
+                                        index_positive = index_positive + 1
                                         ll.append(dd)
-                return render_template('reviews.html', username=_username, place_name=name, llist=ll)
+                return render_template('reviews.html', username=_username, score = (index_positive / index_total), place_name=name, llist=ll)
             except Exception as e:
                 # Log the error and render an error page
                 print(f"API client error: {e}")
@@ -284,11 +286,11 @@ def submit_preferences():
         f"Nationalité : {form_data['nationality']}, "
         f"Fréquence des voyages en Tunisie : {form_data['travelFrequency']}, "
         f"Type de vacances : {form_data['vacationType']}, "
-        f"Budget : {form_data['budget']}, "
+        f"Budget : {form_data['Budget']}, "
         f"Durée du séjour : {form_data['stayDuration']}, "
         f"Saison préférée : {form_data['season']}, "
         f"Taille du groupe : {form_data['groupSize']}, "
-        f"Category : {', '.join(form_data['interests'])}, "
+        f"Category : {', '.join(form_data['category'])}, "
         f"Importance accordée au tourisme durable : {form_data['sustainableTourism']}, "
         f"Prêt à faire des compromis : {form_data['compromise']}, "
         f"Activités spécifiques : {form_data['specificActivities']}"
@@ -296,7 +298,8 @@ def submit_preferences():
     
     print(user_preferences)
    
-    return jsonify({"recommendations":user_preferences })
+    #return jsonify({"recommendations":user_preferences })
+    return (user_preferences)
 
 
 @main.route('/weather-location', methods=['GET'])
@@ -318,37 +321,76 @@ def get_latitude_longitude(location):
     except GeocoderTimedOut:
         return get_latitude_longitude(location)
 
-@main.route('/recommend', methods=['GET', 'POST'])
-def recommend():
-    _username = session.get('username')
-    if not _username:
-        return redirect('/')
-    # Get user preferences from the form
-    user_preferences = {
-        'budget': request.form.get('budget'),
-        'category': request.form.getlist('interests'),  # Get interests as a list
-        #'location': 'Tunis'  # Example location, modify as needed
-    }
 
-    # Filter destinations that match user preferences
-    recommended_df = df[(df['budget'] == user_preferences['budget']) & 
-                        (df['category'].isin(user_preferences['category'])) ]
+# Charger les données depuis le fichier CSV
+df = pd.read_csv(r"C:\\Users\\IMINFO\\tunisian_tourism\\app\\tunisie_destinations.csv")
+df = df.fillna('unknown')
 
-    # If no destinations match, use cosine similarity
-    if recommended_df.empty:
-        # Take the first destination as an example
-        selected_destination = df_encoded.iloc[0].values.reshape(1, -1)
-        similarities = cosine_similarity(selected_destination, df_encoded)
-        similar_indices = similarities.argsort()[0][::-1]
-        similar_destinations = df.iloc[similar_indices]
-        recommended_destinations = similar_destinations.head(3)
+# Convertir les colonnes catégorielles en numériques avec One-Hot Encoding
+df_encoded = pd.get_dummies(df, columns=['name', 'category', 'location', 'budget'])
+knn = NearestNeighbors(n_neighbors=5, metric='cosine')
+
+def train_knn_model():
+    """Entraîne le modèle KNN avec les données encodées."""
+    knn.fit(df_encoded)
+
+def recommend_destinations(budget, category):
+    # Filtrage des destinations en fonction du budget et de la catégorie
+    filtered_destinations = df[(df['budget'] == budget) & (df['category'] == category)]
+    
+    if not filtered_destinations.empty:
+        # Encodage de la destination filtrée
+        filtered_destination_encoded = pd.get_dummies(filtered_destinations.iloc[0:1], 
+                                                    columns=['name', 'category', 'location', 'budget'])
+        
+        # Aligner les colonnes avec df_encoded
+        missing_cols = set(df_encoded.columns) - set(filtered_destination_encoded.columns)
+        for col in missing_cols:
+            filtered_destination_encoded[col] = 0
+        filtered_destination_encoded = filtered_destination_encoded[df_encoded.columns]
+        
+        # Calculer les similarités
+        similarities = cosine_similarity(filtered_destination_encoded, df_encoded)
+        similar_indices = similarities.argsort()[0][::-1][:3]
+        return df.iloc[similar_indices].to_dict(orient='records')
     else:
-        recommended_destinations = recommended_df.head(3)
+        # Si aucune correspondance exacte, utiliser KNN
+        # Créer un vecteur avec les préférences de l'utilisateur
+        user_pref_encoded = pd.get_dummies(pd.DataFrame([[None, category, None, budget]], 
+                                         columns=['name', 'category', 'location', 'budget']))
+        
+        # Aligner les colonnes
+        missing_cols = set(df_encoded.columns) - set(user_pref_encoded.columns)
+        for col in missing_cols:
+            user_pref_encoded[col] = 0
+        user_pref_encoded = user_pref_encoded[df_encoded.columns]
+        
+        distances, indices = knn.kneighbors(user_pref_encoded)
+        return df.iloc[indices[0]].to_dict(orient='records')
 
-    return render_template('result.html', username=_username, destinations=recommended_destinations.to_dict(orient='records'))
+@main.route('/recommendation', methods=['GET', 'POST'])
+def show_recommendation_form():
+    form = RecommendationForm()
+    username = session.get('username')
+    return render_template('recommend.html', form=form, username=username)
 
-
-
+@main.route('/recommend', methods=['POST'])
+def recommend():
+    form = RecommendationForm()
+    if form.validate_on_submit():
+        budget = form.budget.data
+        category = form.category.data
+        
+        # S'assurer que le modèle est entraîné
+        train_knn_model()
+        
+        # Obtenir les recommandations
+        recommended_destinations = recommend_destinations(budget, category)
+        
+        return render_template('result.html', destinations=recommended_destinations)
+    
+    # En cas d'erreur de validation, retourner au formulaire
+    return redirect(url_for('main.show_recommendation_form'))
 
 
 
@@ -407,14 +449,16 @@ print(vscontext)
 llm = ChatGoogleGenerativeAI(model="gemini-1.0-pro-latest", temperature=0.7, top_p=0.85)
 
 # Définir le template de l'invite
-llm_prompt_template = """Tu es un expert en tourisme en Tunisie. 
-Ta tâche est de recommander UNIQUEMENT 2 activités touristiques disponibles à {user_places} ou dans sa région immédiate.
+llm_prompt_template = """Tu es un expert en tourisme en Tunisie.
+Ta tâche est de recommander UNIQUEMENT 2 activités touristiques disponibles à {user_places} ou dans sa région immédiate, en tenant en compte {user_preferences}.
+
 Gafsa
 Découverte des techniques d'irrigation traditionnelles
 Participation aux récoltes de dattes biologiques
 Randonnées dans les oasis
 Nuits en maison troglodyte écologique
 Apprentissage des techniques de permaculture
+
 Sud de la Tunisie
 Parc National de Jbil
 Safari photos respectueux de la faune
@@ -422,8 +466,10 @@ Randonnées chamelières avec guides locaux
 Observation des étoiles (astrotourisme)
 Découverte de la flore saharienne avec un botaniste
 Participation aux projets de préservation des espèces
-Sousse : Visite de Port El Kantaoui  
-Monastir : Ribat de Monastir, Palais présidentiel Habib Bourguiba  
+
+Sousse : Visite de Port El Kantaoui
+ribat de Monastir : Ribat de Monastir, Palais présidentiel Habib Bourguiba
+ouverte des techniques traditionnelles de distillation du bigaradier
 
 Ksar Ghilane
 Hébergement en campements écologiques
@@ -431,36 +477,40 @@ Baignade dans les sources thermales naturelles
 Randonnées à pied dans les dunes
 Découverte de l'architecture traditionnelle des ksour
 Participation aux projets de stabilisation des dunes
+
 Île de Djerba
 Circuit à vélo des potiers traditionnels
 Observation des oiseaux dans la lagune de Bin El Ouediane
 Visite des marchés bio locaux
 Participation à la récolte des olives
 Découverte de la pêche traditionnelle durable
+
 Bonnes Pratiques Écotouristiques
 Transport
 Privilégier les transports en commun
 Utiliser les vélos et la marche pour les courtes distances
 Opter pour des véhicules électriques quand disponible
 Participer au covoiturage local
-pour Tamerza tu peux recommander les activités
--Randonnée autour de l'oued et des cascades près du village  
-pour Matmata:Découverte des pièces troglodytes creusées dans la montagne, cuisine traditionnelle  
-Uthina 
--Site archéologique
--édifice religieux et pièces voûtées aménagées sous le capitole  
-Pour Jendouba tu peux proposer comme activité Site archéologique de Bulla Regia  
 
+pour Tamerza tu peux recommander les activités
+-Randonnée autour de l'oued et des cascades près du village
+
+pour Matmata:Découverte des pièces troglodytes creusées dans la montagne, cuisine traditionnelle
+
+Uthina
+-Site archéologique
+-édifice religieux et pièces voûtées aménagées sous le capitole
+
+Pour Jendouba tu peux proposer comme activité Site archéologique de Bulla Regia
 
 Question: {context}
 
 Important:
 - Ne propose que des activités réellement disponibles à {user_places} ou dans un rayon très proche
 - Ne mentionne PAS d'activités dans d'autres villes de Tunisie
-- Si tu n'as pas d'information spécifique pour {user_places},  fais des suggestions de lieux proche de {user_places}
-
-Format pour chaque recommandation:
-Activité : [nom de l'activité ]
+- Propose un programme au user s'il passe moins de 5jours en tunisie
+Format pour chaque recommandation sous forme:
+Activité : [nom de l'activité]
 Description : [description détaillée]
 Lieu : [emplacement précis dans ou près de {user_places}]
 Budget approximatif : [coût en TND]
@@ -473,7 +523,7 @@ llm_prompt = PromptTemplate.from_template(llm_prompt_template)
 
 # Créer la chaîne RAG
 rag_chain = (
-    {"context": vscontext, "user_places": RunnablePassthrough()}
+    {"context": vscontext, "user_places": RunnablePassthrough(), "user_preferences": RunnablePassthrough()}
     | llm_prompt
     | llm
     | StrOutputParser()
@@ -481,20 +531,26 @@ rag_chain = (
 
 @main.route('/locationChoice')
 def locationChoix():
-    return render_template('locationChoice.html')
+    destination_name = request.args.get('destination_name')
+    return render_template('locationChoice.html', destination_name=destination_name)
+
 
 @main.route('/submit_location', methods=['POST'])
 def submit_location():
     form_data = request.json
-    user_places = form_data.get('city', 'Inconnu')
+    user_places = form_data.get('destination_name')
+    user_preferences = form_data.get('preferences')
 
     print(user_places)
-    # Créer le prompt avec la ville spécifique
-    query = f"Quelles sont les activités touristiques disponibles à {user_places}?"
-    
+    print(user_preferences)
+
+    # Créer le prompt avec la ville spécifique et les préférences de l'utilisateur
+    query = f"Quelles sont les activités touristiques disponibles à {user_places} en tenant en compte {user_preferences}?"
+
     # Appeler la chaîne RAG
-    response = rag_chain.invoke(query, user_places=user_places)
-    print (response)
+    response = rag_chain.invoke(query, user_places=user_places, user_preferences=user_preferences)
+    print(response)
     return jsonify({"recommendations": response})
+
 
 #Fin Tache 3
