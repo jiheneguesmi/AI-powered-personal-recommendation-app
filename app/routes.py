@@ -25,7 +25,7 @@ from langchain_community.document_loaders import WebBaseLoader
 from langchain.chains import LLMChain
 from langchain.schema import StrOutputParser
 from langchain.schema.prompt_template import format_document
-#from langchain.schema.runnable import RunnablePassthrough
+from langchain.schema.runnable import RunnablePassthrough
 from langchain_core.runnables import RunnableLambda, RunnablePassthrough
 from langchain_community.vectorstores import Chroma, FAISS
 from langchain_community.document_loaders import PyPDFLoader
@@ -165,7 +165,7 @@ def places():
             searchString = searchString + ' ' + state
         results = PlacesClient.google_maps_search(
         [searchString],
-        limit=100, # limit of palces per each query
+        limit=10, # limit of palces per each query
         language='en',
         region='TN',
         )
@@ -200,8 +200,12 @@ def reviews():
                 endpoint = os.environ['AZURE_TEXT_ANALYTICS_ENDPOINT']
                 key = os.environ['AZURE_TEXT_ANALYTICS_KEY']
                 text_analytics_client = TextAnalyticsClient(endpoint, AzureKeyCredential(key))
-                results = ReviewsClient.google_maps_reviews([id], reviews_limit=100, language='en')
+                results = ReviewsClient.google_maps_reviews([id], reviews_limit=10, language='en')
                 ll = list()
+                index_total = 0
+                index_negative = 0
+                index_positive = 0
+                index_neutral = 0
                 index_total = 0
                 index_positive = 0
                 for review in results:
@@ -218,7 +222,11 @@ def reviews():
                                     if (result.sentiment == 'positive'):
                                         index_positive = index_positive + 1
                                         ll.append(dd)
-                return render_template('reviews.html', username=_username, score = (index_positive / index_total), place_name=name, llist=ll)
+                                    if (result.sentiment == 'neutral'):
+                                        index_neutral = index_neutral + 1
+                                    if (result.sentiment == 'negative'):
+                                        index_negative = index_negative + 1
+                return render_template('reviews.html', username=_username, score = (index_positive / index_total), score_positive=(index_positive / index_total), score_neutral=(index_neutral / index_total),score_negative=(index_negative / index_total), place_name=name, llist=ll)
             except Exception as e:
                 # Log the error and render an error page
                 print(f"API client error: {e}")
@@ -444,7 +452,7 @@ for d in res:
 
 # Obtenir l'interface Retriever
 vscontext = vectorstore.as_retriever()
-print(vscontext)
+#print(vscontext)
 # Initialiser le modèle LLM
 llm = ChatGoogleGenerativeAI(model="gemini-1.0-pro-latest", temperature=0.7, top_p=0.85)
 
@@ -554,3 +562,39 @@ def submit_location():
 
 
 #Fin Tache 3
+@main.route('/feed_back', methods=['GET', 'POST'])
+def feed_back():
+    _username = session.get('username')
+    if not _username:
+        return redirect('/')
+    return render_template('feed_back.html', username=_username)
+
+@main.route('/save_feed', methods=['POST'])
+def save_feed():
+    _username = session.get('username')
+    if not _username:
+        return redirect('/')
+    relevancy = request.form.get('recom')
+    activities = request.form.get('actvs')
+    will_return = request.form.get('return')
+    feel = request.form.get('feel')
+    about = request.form.get('act')
+     # Define the data to be saved
+    review_data = {
+        'username': _username,
+        'relevancy': relevancy,
+        'activities': activities,
+        'will_return': will_return,
+        'feel': feel,
+        'about': about,
+        'timestamp': firestore.SERVER_TIMESTAMP  # adds a timestamp field
+    }
+
+    try:
+        # Save data to Firestore collection `reviews`
+        db.collection('reviews').add(review_data)
+        return render_template('index_profile.html', username=_username)
+    except Exception as e:
+        # Handle potential errors
+        print(f"An error occurred: {e}")
+        return render_template('error.html', error="Could not save your feedback. Please try again.")

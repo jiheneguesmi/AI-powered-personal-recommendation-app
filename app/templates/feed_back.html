@@ -16,13 +16,8 @@
     <link rel="stylesheet" href="static/css/style_spica.css">
     <!-- endinject -->
     <link rel="shortcut icon" href="static/img/favicon.png" />
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
-        integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
-        integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
-        crossorigin="anonymous"></script>
-    <link href="dist/css/bootstrap.css" rel="stylesheet">
-    <script type="text/javascript" src="dist/js/jquery-1.10.2.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css"
+        integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
 </head>
 
 <body>
@@ -52,15 +47,15 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="pages/charts/chartjs.html">
+                    <a class="nav-link" href="/preferences">
                         <i class="mdi mdi-clock menu-icon"></i>
                         <span class="menu-title">Find iteneraries</span>
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="pages/icons/mdi.html">
+                    <a class="nav-link" href="/feed_back">
                         <i class="mdi mdi-emoticon menu-icon"></i>
-                        <span class="menu-title">Icons</span>
+                        <span class="menu-title">Leave a review</span>
                     </a>
                 </li>
             </ul>
@@ -118,35 +113,63 @@
             <!-- partial -->
             <div class="main-panel">
                 <div class="content-wrapper">
-                    <h6>Textual positive reviews score</h6>
-                    <div id='rater'></div>
-                    {% if llist %}
-                    {% for ll in llist %}
-                    <div class="card">
-                        <div class="card-header">
-                            {{place_name}}
-                        </div>
-                        <div class="card-body">
-                            <blockquote class="blockquote mb-0">
-                                <p>{{ll.get('review_text')}}</p>
-                                <footer class="blockquote-footer">Author: <cite
-                                        title="Source Title">{{ll.get('author_title')}}</cite></footer>
-                            </blockquote>
-                        </div>
-                    </div>
-                    {% endfor %}
-                    {% else %}
-                    <div class="card">
-                        <div class="card-header">
-                            {{place_name}}
-                        </div>
-                        <div class="card-body">
-                            <blockquote class="blockquote mb-0">
-                                <p>This place either got only bad reputation or no textual reviews at all</p>
-                            </blockquote>
-                        </div>
-                    </div>
-                    {% endif %}
+                    <form action="/save_feed" method="post">
+                        <fieldset>
+                            <legend style="text-align: center;">Leave your feed back after visiting the site and doing
+                                the activities</legend>
+                            <div class="form-row d-flex justify-content-center" style="width: 70%; margin-left: 15%;">
+                                <div class="input-group flex-nowrap">
+                                    <span class="input-group-text" id="addon-wrapping">How relevant the recommendation
+                                        was?</span>
+                                    <input type="number" min="1" max="5" class="form-control" placeholder="1 to 5" name="recom" required />
+                                </div>
+                                <div class="input-group flex-nowrap">
+                                    <span class="input-group-text" id="addon-wrapping">How interesting were the
+                                        activities?</span>
+                                    <input type="number" min="1" max="5" class="form-control" placeholder="1 to 5" name="actvs" required />
+                                </div>
+                                <div class="input-group">
+                                    <span class="input-group-text" id="addon-wrapping">How likely is it that you will
+                                        return?</span>
+                                    <div class="input-group-text">
+                                        <input type="radio" value="Yes" name="return" required />
+                                    </div>
+                                    <input type="text" class="form-control" placeholder="Yes" disabled />
+                                    <div class="input-group-text">
+                                        <input type="radio" value="No" name="return" required />
+                                    </div>
+                                    <input type="text" class="form-control" placeholder="No" disabled />
+                                    <div class="input-group-text">
+                                        <input type="radio" value="Maybe" name="return" required />
+                                    </div>
+                                    <input type="text" class="form-control" placeholder="Maybe" disabled />
+                                </div>
+                                <div class="input-group">
+                                    <span class="input-group-text" id="addon-wrapping">How do you feel about your visit?</span>
+                                    <div class="input-group-text">
+                                        <input type="radio" value="positive" name="feel" required />
+                                    </div>
+                                    <input type="text" class="form-control" placeholder="Positive" disabled />
+                                    <div class="input-group-text">
+                                        <input type="radio" value="negative" name="feel" required />
+                                    </div>
+                                    <input type="text" class="form-control" placeholder="Negative" disabled />
+                                </div>
+                                <div class="input-group">
+                                    <span class="input-group-text" id="addon-wrapping">How do you feel about the activities?</span>
+                                    <div class="input-group-text">
+                                        <input type="radio" value="positive" name="act" required />
+                                    </div>
+                                    <input type="text" class="form-control" placeholder="Positive" disabled />
+                                    <div class="input-group-text">
+                                        <input type="radio" value="negative" name="act" required />
+                                    </div>
+                                    <input type="text" class="form-control" placeholder="Negative" disabled />
+                                </div>
+                                <button type="submit" class="btn btn-primary btn-lg btn-block">Save review and return to dashboard</button>
+                            </div>
+                        </fieldset>
+                    </form>
                 </div>
                 <footer class="footer">
                     <div class="card">
@@ -185,17 +208,6 @@
     <!-- Custom js for this page-->
     <script src="static/js/dashboard.js"></script>
     <!-- End custom js for this page-->
-    <script src="https://unpkg.com/rater-js"></script>
-    <script>
-        var myRating = raterJs({
-            element: document.querySelector('#rater'),
-            rateCallback: function(rate, done){
-                this.setRating(rate);
-                done();
-            }
-        });
-        myRating.setRating(parseFloat('{{score}}'));
-    </script>
 </body>
 
 </html>
